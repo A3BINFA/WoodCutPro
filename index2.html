@@ -1,0 +1,3231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WoodCut Pro - Advanced Woodworking Cut Optimizer</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --wood-brown: #8B4513;
+            --light-wood: #DEB887;
+            --dark-wood: #654321;
+            --sage-green: #87A96B;
+            --cream: #F5F5DC;
+            --charcoal: #36454F;
+            --accent-orange: #D2691E;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --kerf-color: #FF4444;
+            --animation-speed: 0.8s;
+            --success-green: #28a745;
+            --error-red: #dc3545;
+            --warning-yellow: #ffc107;
+            --info-blue: #17a2b8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--charcoal);
+            background: linear-gradient(135deg, var(--cream) 0%, #f0f0f0 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        *:focus {
+            outline: 3px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --wood-brown: #000000;
+                --light-wood: #FFFFFF;
+                --dark-wood: #000000;
+                --sage-green: #006400;
+                --cream: #FFFFFF;
+                --charcoal: #000000;
+                --accent-orange: #FF4500;
+            }
+        }
+
+        /* Enhanced Header */
+        header {
+            background: linear-gradient(135deg, var(--wood-brown) 0%, var(--dark-wood) 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .logo::before {
+            content: "🪚";
+            font-size: 2rem;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        nav a:hover, nav a:focus {
+            color: var(--light-wood);
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Tutorial Overlay */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .tutorial-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .tutorial-step {
+            display: none;
+        }
+
+        .tutorial-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .tutorial-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .tutorial-progress {
+            font-weight: bold;
+            color: var(--sage-green);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(139, 69, 19, 0.85), rgba(101, 67, 33, 0.85)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23DEB887"/><path d="M0 0L50 50L0 100M50 0L100 50L50 100" stroke="%23CD853F" stroke-width="0.5" fill="none"/></svg>');
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.95;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent-orange);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(210, 105, 30, 0.3);
+        }
+
+        .cta-button:hover, .cta-button:focus {
+            background: #B8601A;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(210, 105, 30, 0.4);
+        }
+
+        .cta-button.secondary {
+            background: var(--sage-green);
+            box-shadow: 0 4px 15px rgba(135, 169, 107, 0.3);
+        }
+
+        .cta-button.secondary:hover {
+            background: #6B8E47;
+            box-shadow: 0 8px 25px rgba(135, 169, 107, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 3rem 0;
+        }
+
+        .section {
+            background: white;
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+        }
+
+        .section h2 {
+            color: var(--wood-brown);
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            border-bottom: 3px solid var(--sage-green);
+            padding-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Enhanced Form Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            padding: 2rem;
+            border-radius: 12px;
+            border-left: 5px solid var(--sage-green);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-section h3 {
+            color: var(--wood-brown);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark-wood);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto 1fr auto 1fr;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        input[type="number"], select {
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 100%;
+            min-width: 90px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--sage-green);
+            box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.2);
+            transform: translateY(-1px);
+        }
+
+        input[type="number"]:invalid {
+            border-color: var(--error-red);
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+        }
+
+        /* Enhanced Controls */
+        .controls-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .controls-section h3 {
+            color: var(--wood-brown);
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        .unit-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .unit-button {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--sage-green);
+            background: white;
+            color: var(--sage-green);
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unit-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .unit-button:hover::before {
+            left: 100%;
+        }
+
+        .unit-button.active {
+            background: var(--sage-green);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(135, 169, 107, 0.3);
+        }
+
+        .optimization-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: var(--dark-wood);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .control-group small {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: block;
+        }
+
+        /* Enhanced Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .slider {
+            background-color: var(--sage-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Auto-save Status */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.saving {
+            background: rgba(255, 243, 205, 0.95);
+            color: #856404;
+            border: 1px solid #ffc107;
+        }
+
+        .status-indicator.saved {
+            background: rgba(212, 237, 218, 0.95);
+            color: #155724;
+            border: 1px solid #28a745;
+        }
+
+        /* Template Cards */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .template-card {
+            background: linear-gradient(135deg, var(--light-wood), #f0e6d2);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .template-card:hover::before {
+            left: 100%;
+        }
+
+        .template-card:hover, .template-card:focus {
+            background: linear-gradient(135deg, var(--sage-green), #6B8E47);
+            color: white;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(135, 169, 107, 0.3);
+            border-color: var(--sage-green);
+        }
+
+        .template-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .template-card p {
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .template-card small {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        /* Enhanced Visualization */
+        .visualization-container {
+            background: linear-gradient(135deg, #f8f9fa, white);
+            border: 2px dashed var(--sage-green);
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            min-height: 600px;
+        }
+
+        .visualization-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .zoom-button {
+            background: var(--sage-green);
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+
+        .zoom-button:hover, .zoom-button:focus {
+            background: #6B8E47;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(135, 169, 107, 0.3);
+        }
+
+        .zoom-level {
+            font-weight: bold;
+            margin: 0 1rem;
+            color: var(--wood-brown);
+            font-size: 1.1rem;
+        }
+
+        .board-canvas-container {
+            position: relative;
+            overflow: auto;
+            max-height: 700px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .board-visual {
+            background: linear-gradient(135deg, var(--light-wood), #E6D3A3);
+            border: 3px solid var(--wood-brown);
+            border-radius: 8px;
+            margin: 2rem;
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .board-visual:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .board-label {
+            position: absolute;
+            top: -35px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--wood-brown);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cut-piece {
+            position: absolute;
+            border: 3px solid;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all var(--animation-speed) ease;
+            opacity: 0;
+            transform: scale(0.8);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cut-piece.placed {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .cut-piece.rotated {
+            background: rgba(255, 255, 140, 0.9);
+        }
+
+        .cut-piece.rotated::after {
+            content: "↻";
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .cut-piece:hover {
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 10;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .kerf-line {
+            position: absolute;
+            background: var(--kerf-color);
+            z-index: 5;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .kerf-line.horizontal {
+            height: 2px;
+            width: 100%;
+            box-shadow: 0 1px 3px rgba(255, 68, 68, 0.5);
+        }
+
+        .kerf-line.vertical {
+            width: 2px;
+            height: 100%;
+            box-shadow: 1px 0 3px rgba(255, 68, 68, 0.5);
+        }
+
+        /* Animation keyframes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes placePiece {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.3) rotate(180deg); 
+            }
+            50% { 
+                opacity: 0.8; 
+                transform: scale(1.2) rotate(90deg); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) rotate(0deg); 
+            }
+        }
+
+        .piece-placement-animation {
+            animation: placePiece var(--animation-speed) cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        /* Enhanced Results Panel */
+        .results-panel {
+            background: linear-gradient(135deg, var(--sage-green), #6B8E47);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            animation: slideIn 0.6s ease-out;
+            box-shadow: 0 10px 30px rgba(135, 169, 107, 0.3);
+        }
+
+        .results-panel h3 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .result-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .result-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .efficiency-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .efficiency-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48cae4, #4ecdc4);
+            transition: width 1.5s ease-in-out;
+            border-radius: 4px;
+        }
+
+        /* Enhanced Export Section */
+        .export-section {
+            background: linear-gradient(135deg, #f8f9fa, white);
+            padding: 2.5rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            border: 1px solid #e0e0e0;
+        }
+
+        .export-section h3 {
+            color: var(--wood-brown);
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .export-button {
+            background: var(--wood-brown);
+            color: white;
+            padding: 1.2rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .export-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .export-button:hover::before {
+            left: 100%;
+        }
+
+        .export-button:hover, .export-button:focus {
+            background: var(--dark-wood);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .export-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .export-button:disabled:hover {
+            background: var(--wood-brown);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Loading and Progress */
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(135, 169, 107, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--sage-green);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(135, 169, 107, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sage-green), var(--accent-orange));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        /* Messages */
+        .message {
+            padding: 1.2rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-weight: 600;
+            border-left: 5px solid;
+            animation: slideIn 0.5s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        .message.success {
+            background: rgba(212, 237, 218, 0.95);
+            color: #155724;
+            border-color: var(--success-green);
+        }
+
+        .message.error {
+            background: rgba(248, 215, 218, 0.95);
+            color: #721c24;
+            border-color: var(--error-red);
+        }
+
+        .message.warning {
+            background: rgba(255, 243, 205, 0.95);
+            color: #856404;
+            border-color: var(--warning-yellow);
+        }
+
+        .message.info {
+            background: rgba(209, 236, 241, 0.95);
+            color: #0c5460;
+            border-color: var(--info-blue);
+        }
+
+        /* Buttons */
+        .add-button, .remove-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .add-button {
+            background: var(--sage-green);
+            color: white;
+        }
+
+        .remove-button {
+            background: var(--error-red);
+            color: white;
+        }
+
+        .add-button:hover, .remove-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .add-button:hover {
+            background: #6B8E47;
+        }
+
+        .remove-button:hover {
+            background: #c82333;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .input-row span {
+                font-weight: bold;
+                color: var(--wood-brown);
+            }
+
+            .optimization-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .visualization-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .export-options {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .cta-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-indicator {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 1rem 0;
+            }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--charcoal);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header role="banner">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">WoodCut Pro</div>
+                <nav role="navigation" aria-label="Main navigation">
+                    <ul>
+                        <li><a href="#home" aria-label="Go to home section">Home</a></li>
+                        <li><a href="#calculator" aria-label="Go to calculator section">Calculator</a></li>
+                        <li><a href="#templates" aria-label="Go to templates section">Templates</a></li>
+                        <li><a href="#about" aria-label="Go to about section">About</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorialOverlay" class="tutorial-overlay hidden no-print" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+        <div class="tutorial-content">
+            <button onclick="closeTutorial()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;" aria-label="Close tutorial">&times;</button>
+            
+            <div class="tutorial-step active" data-step="0">
+                <h2 id="tutorialTitle">🎯 Welcome to WoodCut Pro!</h2>
+                <p>This comprehensive tutorial will guide you through optimizing your woodworking cuts using advanced algorithms and professional-grade tools.</p>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <h4>What you'll learn:</h4>
+                    <ul style="text-align: left; margin: 0.5rem 0;">
+                        <li>✅ Setting up units and materials</li>
+                        <li>✅ Configuring advanced optimization settings</li>
+                        <li>✅ Understanding visual cut layouts</li>
+                        <li>✅ Exporting professional reports</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tutorial-step" data-step="1">
+                <h3>📏 Step 1: Choose Your Units</h3>
+                <p>Select your preferred measurement system. WoodCut Pro supports both imperial (inches) and metric (millimeters) units with automatic conversion.</p>
+                <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <strong>💡 Pro Tip:</strong> You can switch units at any time and all measurements will be automatically converted.
+                </div>
+                <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='80' viewBox='0 0 300 80'><rect width='300' height='80' fill='%23f8f9fa' stroke='%23dee2e6'/><rect x='30' y='20' width='100' height='40' rx='20' fill='%2387A96B'/><rect x='170' y='20' width='100' height='40' rx='20' fill='%23e0e0e0'/><text x='80' y='45' text-anchor='middle' fill='white' font-family='Arial' font-size='14' font-weight='bold'>Inches</text><text x='220' y='45' text-anchor='middle' fill='%23666' font-family='Arial' font-size='14'>Millimeters</text></svg>" alt="Unit selector showing inches selected">
+            </div>
+
+            <div class="tutorial-step" data-step="2">
+                <h3>📦 Step 2: Add Your Stock Materials</h3>
+                <p>Enter the dimensions of your available lumber. Include length, width, and thickness for each board.</p>
+                <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <strong>⚠️ Important:</strong> Use actual dimensions after planing/surfacing for accurate results.
+                </div>
+                <ul style="text-align: left; margin: 1rem 0;">
+                    <li>Measure each board individually</li>
+                    <li>Account for any defects or unusable areas</li>
+                    <li>Add multiple stock pieces as needed</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-step" data-step="3">
+                <h3>📐 Step 3: Define Required Pieces</h3>
+                <p>Specify the dimensions and quantities of pieces you need to cut from your stock.</p>
+                <div style="background: #d1ecf1; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <strong>🚀 Quick Start:</strong> Use our project templates for common woodworking projects!
+                </div>
+                <ul style="text-align: left; margin: 1rem 0;">
+                    <li>Enter final dimensions for each piece</li>
+                    <li>Specify quantities for identical pieces</li>
+                    <li>Include allowances for sanding/finishing</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-step" data-step="4">
+                <h3>⚙️ Step 4: Configure Optimization Settings</h3>
+                <p>Fine-tune the algorithm settings for optimal results:</p>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <ul style="text-align: left; margin: 0;">
+                        <li><strong>Kerf Width:</strong> Accounts for material lost to saw blade</li>
+                        <li><strong>Allow Rotation:</strong> Pieces can rotate 90° for better fit</li>
+                        <li><strong>Packing Algorithm:</strong> MaxRects (best), Guillotine (fast), or Shelf (simple)</li>
+                        <li><strong>Animation:</strong> Visualize the cutting process</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tutorial-step" data-step="5">
+                <h3>🎨 Step 5: Analyze Results</h3>
+                <p>Review your optimized cutting plan:</p>
+                <ul style="text-align: left; margin: 1rem 0;">
+                    <li>📊 <strong>Efficiency Statistics:</strong> Material usage and waste metrics</li>
+                    <li>🎯 <strong>Visual Layout:</strong> Interactive cutting diagrams with zoom/pan</li>
+                    <li>🔍 <strong>Cut Lines:</strong> Kerf visualization for precise planning</li>
+                    <li>📋 <strong>Piece Information:</strong> Hover over pieces for details</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-step" data-step="6">
+                <h3>📤 Step 6: Export Your Plan</h3>
+                <p>Generate professional reports for your workshop:</p>
+                <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <ul style="text-align: left; margin: 0;">
+                        <li>📄 <strong>Detailed PDF:</strong> Complete cutting plan with measurements</li>
+                        <li>🖼️ <strong>Layout Images:</strong> Visual diagrams for reference</li>
+                        <li>📋 <strong>Cut Lists:</strong> Organized cutting sequences</li>
+                        <li>💾 <strong>Project Files:</strong> Save and share your work</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tutorial-navigation">
+                <button onclick="previousTutorialStep()" id="prevBtn" class="cta-button secondary" disabled>Previous</button>
+                <span class="tutorial-progress" id="tutorialProgress">1 of 7</span>
+                <button onclick="nextTutorialStep()" id="nextBtn" class="cta-button">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-save status -->
+    <div id="autosaveStatus" class="status-indicator saved hidden no-print">
+        <span>💾</span> <span id="autosaveText">Project auto-saved</span>
+    </div>
+
+    <section id="home" class="hero">
+        <div class="container">
+            <h1>Advanced Woodworking Cut Optimizer</h1>
+            <p>Maximize material efficiency with intelligent 2D bin packing algorithms, rotation optimization, and professional-grade visualization tools. Built for woodworkers who demand precision.</p>
+            <div class="cta-group">
+                <button class="cta-button" onclick="scrollToCalculator()">
+                    🚀 Start Calculating
+                </button>
+                <button class="cta-button secondary" onclick="showTutorial()">
+                    🎓 Take Tutorial
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Project Templates Section -->
+            <section id="templates" class="section">
+                <h2>📐 Quick Start Templates</h2>
+                <p style="margin-bottom: 2rem; color: #666; font-size: 1.1rem;">Choose from our professionally designed project templates to get started quickly with optimized cutting plans.</p>
+                <div class="template-grid">
+                    <div class="template-card" onclick="loadTemplate('bookshelf')" role="button" tabindex="0" aria-label="Load modern bookshelf template">
+                        <h3>📚 Modern Bookshelf</h3>
+                        <p>5-shelf bookcase with face frame</p>
+                        <small>Expected efficiency: ~85%</small>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('table')" role="button" tabindex="0" aria-label="Load farmhouse table template">
+                        <h3>🍽️ Farmhouse Table</h3>
+                        <p>84" dining table with breadboards</p>
+                        <small>Expected efficiency: ~78%</small>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('cuttingBoard')" role="button" tabindex="0" aria-label="Load cutting board template">
+                        <h3>🔪 End-Grain Board</h3>
+                        <p>Professional cutting board</p>
+                        <small>Expected efficiency: ~92%</small>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('cabinet')" role="button" tabindex="0" aria-label="Load cabinet template">
+                        <h3>🗄️ Upper Cabinet</h3>
+                        <p>Kitchen wall cabinet with doors</p>
+                        <small>Expected efficiency: ~81%</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calculator Section -->
+            <section id="calculator" class="section">
+                <h2>🧮 Advanced Cut Calculator</h2>
+                
+                <!-- Enhanced Controls -->
+                <div class="controls-section">
+                    <h3>⚙️ Optimization Settings</h3>
+                    
+                    <div class="unit-selector">
+                        <button class="unit-button active" onclick="setUnits('inches')" id="inchesBtn" aria-pressed="true">📏 Inches</button>
+                        <button class="unit-button" onclick="setUnits('mm')" id="mmBtn" aria-pressed="false">📐 Millimeters</button>
+                    </div>
+
+                    <div class="optimization-controls">
+                        <div class="control-group">
+                            <label for="kerfWidth">⚡ Saw Kerf Width (<span id="kerfUnit">inches</span>):</label>
+                            <input type="number" id="kerfWidth" value="0.125" step="0.001" min="0" aria-describedby="kerfHelp">
+                            <small id="kerfHelp">Material lost to saw blade thickness (typically 0.125" for table saw)</small>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="allowRotation">🔄 Allow Piece Rotation:</label>
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="allowRotation" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <small>Rotate pieces 90° for better material utilization</small>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="packingAlgorithm">🧠 Packing Algorithm:</label>
+                            <select id="packingAlgorithm" aria-describedby="algorithmHelp">
+                                <option value="maxrects">MaxRects (Best Fit)</option>
+                                <option value="guillotine">Guillotine (Fast)</option>
+                                <option value="shelf">Shelf (Simple)</option>
+                            </select>
+                            <small id="algorithmHelp">MaxRects provides best efficiency, Guillotine is faster for large projects</small>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="animateCalculation">🎬 Animate Placement:</label>
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="animateCalculation" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <small>Show animated piece placement for better understanding</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <!-- Stock Pieces -->
+                    <div class="form-section">
+                        <h3>📦 Available Stock Materials</h3>
+                        <div id="stockPieces">
+                            <!-- Dynamic content will be added here -->
+                        </div>
+                        <button class="add-button" onclick="addStockPiece()" aria-label="Add new stock piece">
+                            ➕ Add Stock Piece
+                        </button>
+                    </div>
+
+                    <!-- Required Pieces -->
+                    <div class="form-section">
+                        <h3>📏 Required Pieces</h3>
+                        <div id="requiredPieces">
+                            <!-- Dynamic content will be added here -->
+                        </div>
+                        <button class="add-button" onclick="addRequiredPiece()" aria-label="Add new required piece">
+                            ➕ Add Required Piece
+                        </button>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 3rem 0;">
+                    <button class="cta-button" onclick="calculateCuts()" id="calculateBtn">
+                        <span id="calculateBtnText">🎯 Calculate Optimal Cuts</span>
+                        <div class="loading hidden" id="calculateLoading"></div>
+                    </button>
+                    <div class="progress-container hidden" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results" class="hidden">
+                    <div class="results-panel">
+                        <h3>📊 Optimization Results</h3>
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <span class="result-value" id="efficiencyValue">0%</span>
+                                <span class="result-label">Material Efficiency</span>
+                                <div class="efficiency-bar">
+                                    <div class="efficiency-fill" id="efficiencyFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-value" id="wasteValue">0</span>
+                                <span class="result-label">Waste Volume (<span class="unit-display">in³</span>)</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-value" id="boardsUsedValue">0</span>
+                                <span class="result-label">Boards Used</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-value" id="cutsNeededValue">0</span>
+                                <span class="result-label">Total Cuts</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-value" id="rotatedPiecesValue">0</span>
+                                <span class="result-label">Rotated Pieces</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-value" id="processingTimeValue">0ms</span>
+                                <span class="result-label">Processing Time</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Visualization -->
+                    <div class="section">
+                        <h3>🎨 Interactive Cut Layout Visualization</h3>
+                        <div class="visualization-controls">
+                            <div class="zoom-controls">
+                                <button class="zoom-button" onclick="zoomOut()" aria-label="Zoom out">🔍➖</button>
+                                <span class="zoom-level" id="zoomLevel">100%</span>
+                                <button class="zoom-button" onclick="zoomIn()" aria-label="Zoom in">🔍➕</button>
+                                <button class="zoom-button" onclick="resetZoom()" aria-label="Reset zoom">🎯 Reset</button>
+                            </div>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showKerfLines" checked onchange="toggleKerfLines()">
+                                    <span>Show Cut Lines</span>
+                                </label>
+                                <button class="zoom-button" onclick="toggleFullscreen()" aria-label="Toggle fullscreen">
+                                    🖥️ Fullscreen
+                                </button>
+                            </div>
+                        </div>
+                        <div class="visualization-container" id="visualizationContainer">
+                            <div class="board-canvas-container" id="boardCanvasContainer">
+                                <div id="cutVisualization">
+                                    <div style="text-align: center; padding: 4rem; color: #666;">
+                                        <h4 style="margin-bottom: 1rem;">🎯 Ready to Optimize!</h4>
+                                        <p>Configure your stock materials and required pieces above, then click "Calculate Optimal Cuts" to see your professional cutting layout with:</p>
+                                        <ul style="text-align: left; display: inline-block; margin: 2rem 0;">
+                                            <li>✅ Interactive board visualization</li>
+                                            <li>✅ Color-coded piece identification</li>
+                                            <li>✅ Kerf line overlays</li>
+                                            <li>✅ Zoom and pan capabilities</li>
+                                            <li>✅ Rotation indicators</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Export Options -->
+                    <div class="export-section">
+                        <h3>📤 Professional Export Options</h3>
+                        <div class="export-options">
+                            <button class="export-button" onclick="exportToPDF()" id="exportPdfBtn">
+                                📄 Export Detailed PDF
+                            </button>
+                            <button class="export-button" onclick="exportToImage()" id="exportImageBtn">
+                                🖼️ Save Layout Image
+                            </button>
+                            <button class="export-button" onclick="exportCutList()" id="exportCutListBtn">
+                                📋 Export Cut List
+                            </button>
+                            <button class="export-button" onclick="saveProject()" id="saveProjectBtn">
+                                💾 Save Project File
+                            </button>
+                            <button class="export-button" onclick="loadProject()" id="loadProjectBtn">
+                                📁 Load Project File
+                            </button>
+                            <button class="export-button" onclick="shareProject()" id="shareProjectBtn">
+                                🔗 Share Project
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enhanced About Section -->
+            <section id="about" class="section">
+                <h2>🔧 About WoodCut Pro</h2>
+                <div class="form-grid">
+                    <div>
+                        <h3>🚀 Advanced Features</h3>
+                        <ul style="list-style-type: none; padding-left: 0; line-height: 2.2;">
+                            <li>✅ <strong>MaxRects Algorithm:</strong> Industry-leading bin packing</li>
+                            <li>✅ <strong>Intelligent Rotation:</strong> 90° piece optimization</li>
+                            <li>✅ <strong>Animated Visualization:</strong> See cuts being placed</li>
+                            <li>✅ <strong>Interactive Zoom/Pan:</strong> Detailed layout inspection</li>
+                            <li>✅ <strong>Kerf Compensation:</strong> Accurate saw blade accounting</li>
+                            <li>✅ <strong>Auto-save:</strong> Never lose your work</li>
+                            <li>✅ <strong>Professional PDF Export:</strong> Workshop-ready reports</li>
+                            <li>✅ <strong>Accessibility:</strong> WCAG 2.1 compliant</li>
+                            <li>✅ <strong>Mobile Responsive:</strong> Works on all devices</li>
+                            <li>✅ <strong>Offline Capable:</strong> Local storage support</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>🎯 Perfect For</h3>
+                        <ul style="list-style-type: none; padding-left: 0; line-height: 2.2;">
+                            <li>🏠 <strong>Home Woodworkers:</strong> Maximize hobby lumber</li>
+                            <li>🏭 <strong>Cabinet Shops:</strong> Production optimization</li>
+                            <li>🎓 <strong>Woodworking Schools:</strong> Educational tool</li>
+                            <li>📐 <strong>Furniture Makers:</strong> Complex project planning</li>
+                            <li>💰 <strong>Cost Reduction:</strong> Minimize material waste</li>
+                            <li>🌱 <strong>Sustainability:</strong> Environmental responsibility</li>
+                            <li>⚡ <strong>Efficiency:</strong> Faster project completion</li>
+                            <li>🔄 <strong>Batch Processing:</strong> Multiple project management</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 2rem; border-radius: 12px; margin-top: 2rem; text-align: center;">
+                    <h4 style="color: var(--wood-brown); margin-bottom: 1rem;">📈 Algorithm Performance</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div>
+                            <strong style="font-size: 1.5rem; color: var(--sage-green);">85-95%</strong>
+                            <div>Typical Efficiency</div>
+                        </div>
+                        <div>
+                            <strong style="font-size: 1.5rem; color: var(--sage-green);">&lt;2s</strong>
+                            <div>Processing Time</div>
+                        </div>
+                        <div>
+                            <strong style="font-size: 1.5rem; color: var(--sage-green);">1000+</strong>
+                            <div>Pieces Supported</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let currentUnits = 'inches';
+        let currentZoom = 1;
+        let calculationResults = null;
+        let tutorialStep = 0;
+        let autosaveTimer = null;
+        let isFullscreen = false;
+
+        // Enhanced project templates with realistic data
+        const templates = {
+            bookshelf: {
+                name: "Modern 5-Shelf Bookcase",
+                description: "Professional bookcase with face frame construction",
+                pieces: [
+                    {length: 72, width: 11.25, thickness: 0.75, quantity: 2, name: "Sides"},
+                    {length: 30, width: 11.25, thickness: 0.75, quantity: 5, name: "Shelves"},
+                    {length: 30, width: 3, thickness: 0.75, quantity: 2, name: "Face frame rails"},
+                    {length: 66, width: 2, thickness: 0.75, quantity: 2, name: "Face frame stiles"},
+                    {length: 30, width: 66, thickness: 0.25, quantity: 1, name: "Back panel"}
+                ],
+                stock: [
+                    {length: 96, width: 12, thickness: 0.75},
+                    {length: 96, width: 12, thickness: 0.75},
+                    {length: 48, width: 72, thickness: 0.25}
+                ]
+            },
+            table: {
+                name: "Farmhouse Dining Table",
+                description: "84-inch dining table with breadboard ends",
+                pieces: [
+                    {length: 84, width: 42, thickness: 1.75, quantity: 1, name: "Table top"},
+                    {length: 29, width: 3.5, thickness: 3.5, quantity: 4, name: "Legs"},
+                    {length: 78, width: 6, thickness: 1.5, quantity: 2, name: "Long aprons"},
+                    {length: 30, width: 6, thickness: 1.5, quantity: 2, name: "Short aprons"},
+                    {length: 42, width: 4, thickness: 1.75, quantity: 2, name: "Breadboard ends"}
+                ],
+                stock: [
+                    {length: 96, width: 48, thickness: 2},
+                    {length: 96, width: 8, thickness: 4},
+                    {length: 96, width: 12, thickness: 2}
+                ]
+            },
+            cuttingBoard: {
+                name: "End-Grain Cutting Board",
+                description: "Professional 18x12 end-grain cutting board",
+                pieces: [
+                    {length: 2, width: 2, thickness: 12, quantity: 32, name: "End grain blocks"},
+                    {length: 18, width: 1, thickness: 0.25, quantity: 4, name: "Edge strips"}
+                ],
+                stock: [
+                    {length: 96, width: 4, thickness: 2},
+                    {length: 24, width: 4, thickness: 0.25}
+                ]
+            },
+            cabinet: {
+                name: "Upper Kitchen Cabinet",
+                description: "30-inch wall cabinet with doors",
+                pieces: [
+                    {length: 30, width: 12, thickness: 0.75, quantity: 2, name: "Sides"},
+                    {length: 28.5, width: 12, thickness: 0.75, quantity: 2, name: "Top/Bottom"},
+                    {length: 28.5, width: 11.25, thickness: 0.25, quantity: 1, name: "Back panel"},
+                    {length: 30, width: 15, thickness: 0.75, quantity: 2, name: "Doors"},
+                    {length: 28.5, width: 11, thickness: 0.75, quantity: 1, name: "Adjustable shelf"}
+                ],
+                stock: [
+                    {length: 96, width: 16, thickness: 0.75},
+                    {length: 48, width: 32, thickness: 0.25}
+                ]
+            }
+        };
+
+        // Advanced MaxRects bin packing algorithm
+        class MaxRectsAlgorithm {
+            constructor(width, height) {
+                this.binWidth = width;
+                this.binHeight = height;
+                this.usedRects = [];
+                this.freeRects = [{x: 0, y: 0, width: width, height: height}];
+            }
+
+            insert(width, height, allowRotate = true) {
+                let bestNode = this.findBestPosition(width, height, allowRotate);
+                
+                if (bestNode.width === 0) {
+                    return null; // Couldn't fit
+                }
+
+                this.placeRect(bestNode);
+                return bestNode;
+            }
+
+            findBestPosition(width, height, allowRotate) {
+                let bestNode = {x: 0, y: 0, width: 0, height: 0, rotated: false};
+                let bestShortSideFit = Number.MAX_VALUE;
+                let bestLongSideFit = Number.MAX_VALUE;
+
+                for (let rect of this.freeRects) {
+                    // Try normal orientation
+                    if (rect.width >= width && rect.height >= height) {
+                        let leftoverHoriz = rect.width - width;
+                        let leftoverVert = rect.height - height;
+                        let shortSideFit = Math.min(leftoverHoriz, leftoverVert);
+                        let longSideFit = Math.max(leftoverHoriz, leftoverVert);
+
+                        if (shortSideFit < bestShortSideFit || 
+                            (shortSideFit === bestShortSideFit && longSideFit < bestLongSideFit)) {
+                            bestNode = {
+                                x: rect.x,
+                                y: rect.y,
+                                width: width,
+                                height: height,
+                                rotated: false
+                            };
+                            bestShortSideFit = shortSideFit;
+                            bestLongSideFit = longSideFit;
+                        }
+                    }
+
+                    // Try rotated orientation
+                    if (allowRotate && rect.width >= height && rect.height >= width && 
+                        !(width === height)) { // Don't rotate squares
+                        let leftoverHoriz = rect.width - height;
+                        let leftoverVert = rect.height - width;
+                        let shortSideFit = Math.min(leftoverHoriz, leftoverVert);
+                        let longSideFit = Math.max(leftoverHoriz, leftoverVert);
+
+                        if (shortSideFit < bestShortSideFit || 
+                            (shortSideFit === bestShortSideFit && longSideFit < bestLongSideFit)) {
+                            bestNode = {
+                                x: rect.x,
+                                y: rect.y,
+                                width: height,
+                                height: width,
+                                rotated: true
+                            };
+                            bestShortSideFit = shortSideFit;
+                            bestLongSideFit = longSideFit;
+                        }
+                    }
+                }
+
+                return bestNode;
+            }
+
+            placeRect(node) {
+                let numRectsToProcess = this.freeRects.length;
+                for (let i = 0; i < numRectsToProcess; i++) {
+                    if (this.splitFreeNode(this.freeRects[i], node)) {
+                        this.freeRects.splice(i, 1);
+                        i--;
+                        numRectsToProcess--;
+                    }
+                }
+
+                this.pruneFreeList();
+                this.usedRects.push(node);
+            }
+
+            splitFreeNode(freeNode, usedNode) {
+                // Test if the used node overlaps with the free node
+                if (usedNode.x >= freeNode.x + freeNode.width || 
+                    usedNode.x + usedNode.width <= freeNode.x ||
+                    usedNode.y >= freeNode.y + freeNode.height || 
+                    usedNode.y + usedNode.height <= freeNode.y) {
+                    return false;
+                }
+
+                if (usedNode.x < freeNode.x + freeNode.width && usedNode.x + usedNode.width > freeNode.x) {
+                    // New node at the top side of the used node
+                    if (usedNode.y > freeNode.y && usedNode.y < freeNode.y + freeNode.height) {
+                        let newNode = {
+                            x: freeNode.x,
+                            y: freeNode.y,
+                            width: freeNode.width,
+                            height: usedNode.y - freeNode.y
+                        };
+                        this.freeRects.push(newNode);
+                    }
+
+                    // New node at the bottom side of the used node
+                    if (usedNode.y + usedNode.height < freeNode.y + freeNode.height) {
+                        let newNode = {
+                            x: freeNode.x,
+                            y: usedNode.y + usedNode.height,
+                            width: freeNode.width,
+                            height: freeNode.y + freeNode.height - (usedNode.y + usedNode.height)
+                        };
+                        this.freeRects.push(newNode);
+                    }
+                }
+
+                if (usedNode.y < freeNode.y + freeNode.height && usedNode.y + usedNode.height > freeNode.y) {
+                    // New node at the left side of the used node
+                    if (usedNode.x > freeNode.x && usedNode.x < freeNode.x + freeNode.width) {
+                        let newNode = {
+                            x: freeNode.x,
+                            y: freeNode.y,
+                            width: usedNode.x - freeNode.x,
+                            height: freeNode.height
+                        };
+                        this.freeRects.push(newNode);
+                    }
+
+                    // New node at the right side of the used node
+                    if (usedNode.x + usedNode.width < freeNode.x + freeNode.width) {
+                        let newNode = {
+                            x: usedNode.x + usedNode.width,
+                            y: freeNode.y,
+                            width: freeNode.x + freeNode.width - (usedNode.x + usedNode.width),
+                            height: freeNode.height
+                        };
+                        this.freeRects.push(newNode);
+                    }
+                }
+
+                return true;
+            }
+
+            pruneFreeList() {
+                for (let i = 0; i < this.freeRects.length; i++) {
+                    for (let j = i + 1; j < this.freeRects.length; j++) {
+                        if (this.isContainedIn(this.freeRects[i], this.freeRects[j])) {
+                            this.freeRects.splice(i, 1);
+                            i--;
+                            break;
+                        }
+                        if (this.isContainedIn(this.freeRects[j], this.freeRects[i])) {
+                            this.freeRects.splice(j, 1);
+                            j--;
+                        }
+                    }
+                }
+            }
+
+            isContainedIn(a, b) {
+                return a.x >= b.x && a.y >= b.y && 
+                       a.x + a.width <= b.x + b.width && 
+                       a.y + a.height <= b.y + b.height;
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            loadAutosavedProject();
+            updateUnitDisplays();
+            
+            // Initialize with default pieces
+            addStockPiece();
+            addRequiredPiece();
+            
+            showMessage("🎉 Welcome to WoodCut Pro! Take the tutorial for a guided tour or jump right in.", "info");
+        });
+
+        function initializeApp() {
+            // Set up event listeners for accessibility
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+
+            // Set up auto-save
+            setupAutosave();
+
+            // Set up smooth scrolling for navigation
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        }
+
+        // Tutorial System
+        function showTutorial() {
+            document.getElementById('tutorialOverlay').classList.remove('hidden');
+            tutorialStep = 0;
+            updateTutorialStep();
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorialOverlay').classList.add('hidden');
+        }
+
+        function nextTutorialStep() {
+            if (tutorialStep < 6) {
+                tutorialStep++;
+                updateTutorialStep();
+            } else {
+                closeTutorial();
+                scrollToCalculator();
+            }
+        }
+
+        function previousTutorialStep() {
+            if (tutorialStep > 0) {
+                tutorialStep--;
+                updateTutorialStep();
+            }
+        }
+
+        function updateTutorialStep() {
+            const steps = document.querySelectorAll('.tutorial-step');
+            steps.forEach((step, index) => {
+                step.classList.toggle('active', index === tutorialStep);
+            });
+
+            document.getElementById('tutorialProgress').textContent = `${tutorialStep + 1} of 7`;
+            document.getElementById('prevBtn').disabled = tutorialStep === 0;
+            document.getElementById('nextBtn').textContent = tutorialStep === 6 ? '🚀 Start Building!' : 'Next';
+        }
+
+        // Auto-save functionality
+        function setupAutosave() {
+            // Auto-save every 30 seconds
+            setInterval(autosaveProject, 30000);
+            
+            // Auto-save on input changes
+            document.addEventListener('input', function(e) {
+                if (e.target.type === 'number' || e.target.tagName === 'SELECT' || e.target.type === 'checkbox') {
+                    clearTimeout(autosaveTimer);
+                    autosaveTimer = setTimeout(autosaveProject, 2000);
+                }
+            });
+        }
+
+        function autosaveProject() {
+            try {
+                const projectData = {
+                    units: currentUnits,
+                    stock: collectStockData(),
+                    required: collectRequiredData(),
+                    settings: {
+                        kerfWidth: document.getElementById('kerfWidth').value,
+                        allowRotation: document.getElementById('allowRotation').checked,
+                        packingAlgorithm: document.getElementById('packingAlgorithm').value,
+                        animateCalculation: document.getElementById('animateCalculation').checked
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('woodcut-autosave', JSON.stringify(projectData));
+                showAutosaveStatus();
+            } catch (error) {
+                console.warn('Auto-save failed:', error);
+            }
+        }
+
+        function loadAutosavedProject() {
+            try {
+                const saved = localStorage.getItem('woodcut-autosave');
+                if (saved) {
+                    const projectData = JSON.parse(saved);
+                    // Only load if it's recent (within 7 days)
+                    const saveTime = new Date(projectData.timestamp);
+                    const now = new Date();
+                    if (now - saveTime < 7 * 24 * 60 * 60 * 1000) {
+                        loadProjectData(projectData, true);
+                        showMessage("📁 Auto-saved project loaded successfully!", "success");
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load auto-saved project:', error);
+            }
+        }
+
+        function showAutosaveStatus() {
+            const status = document.getElementById('autosaveStatus');
+            const text = document.getElementById('autosaveText');
+            
+            status.className = 'status-indicator saving';
+            text.textContent = 'Saving...';
+            status.classList.remove('hidden');
+            
+            setTimeout(() => {
+                status.className = 'status-indicator saved';
+                text.textContent = 'Project auto-saved';
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                }, 3000);
+            }, 1000);
+        }
+
+        // Enhanced unit system
+        function setUnits(unit) {
+            if (currentUnits === unit) return;
+            
+            const conversionFactor = unit === 'mm' ? 25.4 : 1/25.4;
+            const oldUnits = currentUnits;
+            currentUnits = unit;
+            
+            // Update button states and ARIA attributes
+            const inchBtn = document.getElementById('inchesBtn');
+            const mmBtn = document.getElementById('mmBtn');
+            
+            inchBtn.classList.toggle('active', unit === 'inches');
+            mmBtn.classList.toggle('active', unit === 'mm');
+            inchBtn.setAttribute('aria-pressed', unit === 'inches');
+            mmBtn.setAttribute('aria-pressed', unit === 'mm');
+            
+            // Convert all input values
+            const inputs = document.querySelectorAll('input[type="number"]:not(.piece-quantity)');
+            inputs.forEach(input => {
+                if (input.value) {
+                    if (input.id === 'kerfWidth') {
+                        // Special handling for kerf width
+                        input.value = (parseFloat(input.value) * conversionFactor).toFixed(unit === 'mm' ? 2 : 4);
+                    } else {
+                        input.value = (parseFloat(input.value) * conversionFactor).toFixed(unit === 'mm' ? 1 : 3);
+                    }
+                }
+            });
+            
+            updateUnitDisplays();
+            autosaveProject();
+            showMessage(`📏 Units changed from ${oldUnits} to ${unit}. All measurements converted automatically.`, "info");
+        }
+
+        function updateUnitDisplays() {
+            const unitDisplays = document.querySelectorAll('.unit-display');
+            const unitSuffix = currentUnits === 'inches' ? 'in³' : 'cm³';
+            unitDisplays.forEach(display => {
+                display.textContent = unitSuffix;
+            });
+            
+            document.getElementById('kerfUnit').textContent = currentUnits;
+            
+            // Update input steps and placeholders
+            const step = currentUnits === 'inches' ? '0.25' : '1';
+            const inputs = document.querySelectorAll('input[type="number"]:not(.piece-quantity)');
+            inputs.forEach(input => {
+                if (!input.id.includes('kerf')) {
+                    input.step = step;
+                }
+            });
+        }
+
+        // Enhanced template loading
+        function loadTemplate(templateKey) {
+            const template = templates[templateKey];
+            if (!template) return;
+            
+            // Clear existing pieces
+            document.getElementById('stockPieces').innerHTML = '';
+            document.getElementById('requiredPieces').innerHTML = '';
+            
+            // Load stock pieces
+            template.stock.forEach((stock, index) => {
+                addStockPiece();
+                const container = document.getElementById('stockPieces').children[index];
+                const inputs = container.querySelectorAll('input[type="number"]');
+                inputs[0].value = stock.length;
+                inputs[1].value = stock.width;
+                inputs[2].value = stock.thickness;
+            });
+            
+            // Load required pieces
+            template.pieces.forEach((piece, index) => {
+                addRequiredPiece();
+                const container = document.getElementById('requiredPieces').children[index];
+                const inputs = container.querySelectorAll('input[type="number"]');
+                inputs[0].value = piece.length;
+                inputs[1].value = piece.width;
+                inputs[2].value = piece.thickness;
+                inputs[3].value = piece.quantity;
+            });
+            
+            showMessage(`📐 Template loaded: ${template.name} - ${template.description}`, "success");
+            scrollToCalculator();
+            autosaveProject();
+        }
+
+        // Enhanced form management
+        function addStockPiece() {
+            const container = document.getElementById('stockPieces');
+            const index = container.children.length + 1;
+            const step = currentUnits === 'inches' ? '0.25' : '1';
+            
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label>Stock Piece ${index}:</label>
+                <div class="input-row">
+                    <span>Length:</span>
+                    <input type="number" class="stock-length" value="" min="0" step="${step}" aria-label="Stock piece ${index} length">
+                    <span>Width:</span>
+                    <input type="number" class="stock-width" value="" min="0" step="${step}" aria-label="Stock piece ${index} width">
+                    <span>Thickness:</span>
+                    <input type="number" class="stock-thickness" value="" min="0" step="${step}" aria-label="Stock piece ${index} thickness">
+                </div>
+                ${index > 1 ? `<button class="remove-button" onclick="removeStockPiece(this)" aria-label="Remove stock piece ${index}">🗑️ Remove</button>` : ''}
+            `;
+            
+            container.appendChild(div);
+        }
+
+        function addRequiredPiece() {
+            const container = document.getElementById('requiredPieces');
+            const index = container.children.length + 1;
+            const step = currentUnits === 'inches' ? '0.25' : '1';
+            
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label>Required Piece ${index}:</label>
+                <div class="input-row">
+                    <span>Length:</span>
+                    <input type="number" class="piece-length" value="" min="0" step="${step}" aria-label="Required piece ${index} length">
+                    <span>Width:</span>
+                    <input type="number" class="piece-width" value="" min="0" step="${step}" aria-label="Required piece ${index} width">
+                    <span>Thickness:</span>
+                    <input type="number" class="piece-thickness" value="" min="0" step="${step}" aria-label="Required piece ${index} thickness">
+                    <span>Qty:</span>
+                    <input type="number" class="piece-quantity" value="1" min="1" aria-label="Required piece ${index} quantity">
+                </div>
+                ${index > 1 ? `<button class="remove-button" onclick="removeRequiredPiece(this)" aria-label="Remove required piece ${index}">🗑️ Remove</button>` : ''}
+            `;
+            
+            container.appendChild(div);
+        }
+
+        function removeStockPiece(button) {
+            button.closest('.form-group').remove();
+            updateStockLabels();
+            autosaveProject();
+        }
+
+        function removeRequiredPiece(button) {
+            button.closest('.form-group').remove();
+            updateRequiredLabels();
+            autosaveProject();
+        }
+
+        function updateStockLabels() {
+            const labels = document.querySelectorAll('#stockPieces .form-group label');
+            labels.forEach((label, index) => {
+                label.textContent = `Stock Piece ${index + 1}:`;
+            });
+        }
+
+        function updateRequiredLabels() {
+            const labels = document.querySelectorAll('#requiredPieces .form-group label');
+            labels.forEach((label, index) => {
+                label.textContent = `Required Piece ${index + 1}:`;
+            });
+        }
+
+        // Enhanced calculation with progress tracking
+        async function calculateCuts() {
+            const startTime = performance.now();
+            
+            try {
+                // Show loading state
+                const calculateBtn = document.getElementById('calculateBtn');
+                const btnText = document.getElementById('calculateBtnText');
+                const loading = document.getElementById('calculateLoading');
+                const progressContainer = document.getElementById('progressContainer');
+                const progressBar = document.getElementById('progressBar');
+                
+                calculateBtn.disabled = true;
+                btnText.classList.add('hidden');
+                loading.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                
+                // Simulate progress for user feedback
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 85) progress = 85;
+                    progressBar.style.width = `${progress}%`;
+                }, 150);
+                
+                // Collect input data
+                const stock = collectStockData();
+                const required = collectRequiredData();
+                const settings = {
+                    kerfWidth: parseFloat(document.getElementById('kerfWidth').value) || 0,
+                    allowRotation: document.getElementById('allowRotation').checked,
+                    packingAlgorithm: document.getElementById('packingAlgorithm').value,
+                    animateCalculation: document.getElementById('animateCalculation').checked
+                };
+                
+                // Validate inputs
+                if (stock.length === 0 || required.length === 0) {
+                    throw new Error("Please add both stock pieces and required pieces");
+                }
+                
+                // Validate dimensions
+                for (const piece of stock) {
+                    if (piece.length <= 0 || piece.width <= 0 || piece.thickness <= 0) {
+                        throw new Error("All stock dimensions must be greater than 0");
+                    }
+                }
+                
+                for (const piece of required) {
+                    if (piece.length <= 0 || piece.width <= 0 || piece.thickness <= 0) {
+                        throw new Error("All required piece dimensions must be greater than 0");
+                    }
+                }
+                
+                // Perform calculation with selected algorithm
+                const results = await optimizeCutsAdvanced(stock, required, settings);
+                
+                // Complete progress
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                // Calculate processing time
+                const processingTime = performance.now() - startTime;
+                results.processingTime = processingTime;
+                
+                // Display results
+                await displayResultsEnhanced(results);
+                
+                if (settings.animateCalculation) {
+                    await visualizeCutsAnimated(results);
+                } else {
+                    visualizeCutsEnhanced(results);
+                }
+                
+                document.getElementById('results').classList.remove('hidden');
+                showMessage(`🎯 Cut optimization completed in ${processingTime.toFixed(1)}ms with ${results.efficiency.toFixed(1)}% efficiency!`, "success");
+                
+                // Save successful calculation
+                calculationResults = results;
+                autosaveProject();
+                
+            } catch (error) {
+                showMessage(`❌ Error: ${error.message}`, "error");
+                console.error('Calculation error:', error);
+            } finally {
+                // Reset UI
+                const calculateBtn = document.getElementById('calculateBtn');
+                const btnText = document.getElementById('calculateBtnText');
+                const loading = document.getElementById('calculateLoading');
+                const progressContainer = document.getElementById('progressContainer');
+                
+                calculateBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                loading.classList.add('hidden');
+                
+                setTimeout(() => {
+                    progressContainer.classList.add('hidden');
+                }, 1500);
+            }
+        }
+
+        // Enhanced data collection
+        function collectStockData() {
+            const stockPieces = [];
+            const containers = document.querySelectorAll('#stockPieces .form-group');
+            
+            containers.forEach((container, index) => {
+                const inputs = container.querySelectorAll('input[type="number"]');
+                const length = parseFloat(inputs[0].value);
+                const width = parseFloat(inputs[1].value);
+                const thickness = parseFloat(inputs[2].value);
+                
+                if (length > 0 && width > 0 && thickness > 0) {
+                    stockPieces.push({
+                        id: index,
+                        length: length,
+                        width: width,
+                        thickness: thickness,
+                        area: length * width,
+                        volume: length * width * thickness
+                    });
+                }
+            });
+            
+            return stockPieces;
+        }
+
+        function collectRequiredData() {
+            const requiredPieces = [];
+            const containers = document.querySelectorAll('#requiredPieces .form-group');
+            
+            containers.forEach((container, index) => {
+                const inputs = container.querySelectorAll('input[type="number"]');
+                const length = parseFloat(inputs[0].value);
+                const width = parseFloat(inputs[1].value);
+                const thickness = parseFloat(inputs[2].value);
+                const quantity = parseInt(inputs[3].value);
+                
+                if (length > 0 && width > 0 && thickness > 0 && quantity > 0) {
+                    for (let i = 0; i < quantity; i++) {
+                        requiredPieces.push({
+                            id: `${index}-${i}`,
+                            originalIndex: index,
+                            length: length,
+                            width: width,
+                            thickness: thickness,
+                            area: length * width,
+                            volume: length * width * thickness,
+                            name: `Piece ${index + 1}${quantity > 1 ? ` (${i + 1}/${quantity})` : ''}`,
+                            rotated: false
+                        });
+                    }
+                }
+            });
+            
+            return requiredPieces;
+        }
+
+        // Advanced optimization algorithm
+        async function optimizeCutsAdvanced(stock, required, settings) {
+            const results = {
+                cuts: [],
+                efficiency: 0,
+                totalWaste: 0,
+                boardsUsed: 0,
+                totalCuts: 0,
+                rotatedPieces: 0,
+                unusedStock: [...stock],
+                processingTime: 0,
+                algorithm: settings.packingAlgorithm
+            };
+            
+            // Group pieces by thickness for better optimization
+            const thicknessGroups = {};
+            required.forEach(piece => {
+                const key = piece.thickness.toString();
+                if (!thicknessGroups[key]) {
+                    thicknessGroups[key] = [];
+                }
+                thicknessGroups[key].push(piece);
+            });
+            
+            // Sort pieces within each thickness group by area (largest first)
+            Object.keys(thicknessGroups).forEach(thickness => {
+                thicknessGroups[thickness].sort((a, b) => b.area - a.area);
+            });
+            
+            // Process each thickness group
+            for (const [thickness, pieces] of Object.entries(thicknessGroups)) {
+                const compatibleStock = stock.filter(s => s.thickness >= parseFloat(thickness));
+                
+                for (const piece of pieces) {
+                    let placed = false;
+                    
+                    // Try to place on existing cuts first
+                    for (let cut of results.cuts.filter(c => c.stock.thickness >= piece.thickness)) {
+                        const placement = tryPlacePiece(cut, piece, settings);
+                        if (placement) {
+                            cut.placedPieces.push(placement);
+                            if (placement.rotated) results.rotatedPieces++;
+                            placed = true;
+                            break;
+                        }
+                    }
+                    
+                    // If not placed, try new stock
+                    if (!placed) {
+                        for (let i = 0; i < results.unusedStock.length; i++) {
+                            const stockPiece = results.unusedStock[i];
+                            if (stockPiece.thickness >= piece.thickness) {
+                                const newCut = createNewCut(stockPiece, settings.packingAlgorithm);
+                                const placement = tryPlacePiece(newCut, piece, settings);
+                                
+                                if (placement) {
+                                    newCut.placedPieces.push(placement);
+                                    if (placement.rotated) results.rotatedPieces++;
+                                    results.cuts.push(newCut);
+                                    results.unusedStock.splice(i, 1);
+                                    placed = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!placed) {
+                        throw new Error(`Cannot fit piece: ${piece.name} (${piece.length} × ${piece.width} × ${piece.thickness})`);
+                    }
+                }
+            }
+            
+            // Calculate final statistics
+            calculateStatistics(results, settings.kerfWidth);
+            
+            return results;
+        }
+
+        function createNewCut(stockPiece, algorithm) {
+            let packer;
+            
+            switch (algorithm) {
+                case 'maxrects':
+                    packer = new MaxRectsAlgorithm(stockPiece.length, stockPiece.width);
+                    break;
+                case 'guillotine':
+                    packer = createGuillotinePacker(stockPiece);
+                    break;
+                case 'shelf':
+                default:
+                    packer = createShelfPacker(stockPiece);
+                    break;
+            }
+            
+            return {
+                stockId: stockPiece.id,
+                stock: stockPiece,
+                packer: packer,
+                placedPieces: [],
+                remainingArea: stockPiece.area
+            };
+        }
+
+        function createGuillotinePacker(stockPiece) {
+            return {
+                binWidth: stockPiece.length,
+                binHeight: stockPiece.width,
+                freeRects: [{x: 0, y: 0, width: stockPiece.length, height: stockPiece.width}],
+                insert: function(w, h, allowRotate) {
+                    // Find the best fitting rectangle
+                    let bestRect = null;
+                    let bestIndex = -1;
+                    let bestFit = Number.MAX_VALUE;
+                    
+                    for (let i = 0; i < this.freeRects.length; i++) {
+                        const rect = this.freeRects[i];
+                        
+                        // Try normal orientation
+                        if (rect.width >= w && rect.height >= h) {
+                            const fit = rect.width * rect.height - w * h;
+                            if (fit < bestFit) {
+                                bestFit = fit;
+                                bestRect = {x: rect.x, y: rect.y, width: w, height: h, rotated: false};
+                                bestIndex = i;
+                            }
+                        }
+                        
+                        // Try rotated orientation
+                        if (allowRotate && rect.width >= h && rect.height >= w) {
+                            const fit = rect.width * rect.height - h * w;
+                            if (fit < bestFit) {
+                                bestFit = fit;
+                                bestRect = {x: rect.x, y: rect.y, width: h, height: w, rotated: true};
+                                bestIndex = i;
+                            }
+                        }
+                    }
+                    
+                    if (bestRect) {
+                        this.splitRect(bestIndex, bestRect);
+                        return bestRect;
+                    }
+                    
+                    return null;
+                },
+                splitRect: function(index, usedRect) {
+                    const freeRect = this.freeRects[index];
+                    this.freeRects.splice(index, 1);
+                    
+                    // Create remaining rectangles
+                    const remainingRight = {
+                        x: usedRect.x + usedRect.width,
+                        y: freeRect.y,
+                        width: freeRect.width - usedRect.width,
+                        height: freeRect.height
+                    };
+                    
+                    const remainingBottom = {
+                        x: freeRect.x,
+                        y: usedRect.y + usedRect.height,
+                        width: freeRect.width,
+                        height: freeRect.height - usedRect.height
+                    };
+                    
+                    if (remainingRight.width > 0 && remainingRight.height > 0) {
+                        this.freeRects.push(remainingRight);
+                    }
+                    if (remainingBottom.width > 0 && remainingBottom.height > 0) {
+                        this.freeRects.push(remainingBottom);
+                    }
+                }
+            };
+        }
+
+        function createShelfPacker(stockPiece) {
+            return {
+                binWidth: stockPiece.length,
+                binHeight: stockPiece.width,
+                shelves: [{x: 0, y: 0, width: stockPiece.length, height: stockPiece.width, usedWidth: 0}],
+                insert: function(w, h, allowRotate) {
+                    // Try to fit on existing shelves
+                    for (let shelf of this.shelves) {
+                        // Normal orientation
+                        if (shelf.width - shelf.usedWidth >= w && shelf.height >= h) {
+                            const result = {
+                                x: shelf.x + shelf.usedWidth,
+                                y: shelf.y,
+                                width: w,
+                                height: h,
+                                rotated: false
+                            };
+                            shelf.usedWidth += w;
+                            return result;
+                        }
+                        
+                        // Rotated orientation
+                        if (allowRotate && shelf.width - shelf.usedWidth >= h && shelf.height >= w) {
+                            const result = {
+                                x: shelf.x + shelf.usedWidth,
+                                y: shelf.y,
+                                width: h,
+                                height: w,
+                                rotated: true
+                            };
+                            shelf.usedWidth += h;
+                            return result;
+                        }
+                    }
+                    
+                    // Try to create new shelf
+                    const lastShelf = this.shelves[this.shelves.length - 1];
+                    const newShelfY = lastShelf.y + lastShelf.height;
+                    
+                    // Normal orientation
+                    if (newShelfY + h <= this.binHeight && w <= this.binWidth) {
+                        const newShelf = {
+                            x: 0,
+                            y: newShelfY,
+                            width: this.binWidth,
+                            height: h,
+                            usedWidth: w
+                        };
+                        this.shelves.push(newShelf);
+                        return {x: 0, y: newShelfY, width: w, height: h, rotated: false};
+                    }
+                    
+                    // Rotated orientation
+                    if (allowRotate && newShelfY + w <= this.binHeight && h <= this.binWidth) {
+                        const newShelf = {
+                            x: 0,
+                            y: newShelfY,
+                            width: this.binWidth,
+                            height: w,
+                            usedWidth: h
+                        };
+                        this.shelves.push(newShelf);
+                        return {x: 0, y: newShelfY, width: h, height: w, rotated: true};
+                    }
+                    
+                    return null;
+                }
+            };
+        }
+
+        function tryPlacePiece(cut, piece, settings) {
+            const kerfWidth = settings.kerfWidth;
+            const allowRotation = settings.allowRotation;
+            
+            // Account for kerf width in dimensions
+            const pieceWidth = piece.width + kerfWidth;
+            const pieceLength = piece.length + kerfWidth;
+            
+            const placement = cut.packer.insert(pieceLength, pieceWidth, allowRotation);
+            
+            if (placement) {
+                // Adjust placement back to actual piece dimensions
+                return {
+                    ...piece,
+                    x: placement.x,
+                    y: placement.y,
+                    width: placement.rotated ? piece.length : piece.width,
+                    length: placement.rotated ? piece.width : piece.length,
+                    rotated: placement.rotated
+                };
+            }
+            
+            return null;
+        }
+
+        function calculateStatistics(results, kerfWidth) {
+            const usedStock = results.cuts.map(cut => cut.stock);
+            const totalStockVolume = usedStock.reduce((sum, stock) => sum + stock.volume, 0);
+            const totalRequiredVolume = results.cuts.reduce((sum, cut) => {
+                return sum + cut.placedPieces.reduce((pieceSum, piece) => {
+                    return pieceSum + piece.volume;
+                }, 0);
+            }, 0);
+            
+            // Calculate kerf waste
+            const kerfWaste = results.cuts.reduce((sum, cut) => {
+                return sum + cut.placedPieces.reduce((kerfSum, piece) => {
+                    // Kerf waste is approximately the perimeter times kerf width times thickness
+                    const perimeter = 2 * (piece.length + piece.width);
+                    return kerfSum + (perimeter * kerfWidth * piece.thickness);
+                }, 0);
+            }, 0);
+            
+            results.boardsUsed = results.cuts.length;
+            results.totalCuts = results.cuts.reduce((sum, cut) => sum + cut.placedPieces.length, 0);
+            results.totalWaste = totalStockVolume - totalRequiredVolume - kerfWaste;
+            results.efficiency = totalStockVolume > 0 ? ((totalRequiredVolume + kerfWaste) / totalStockVolume) * 100 : 0;
+            
+            // Ensure efficiency doesn't exceed 100%
+            results.efficiency = Math.min(results.efficiency, 100);
+        }
+
+        // Enhanced results display
+        async function displayResultsEnhanced(results) {
+            // Animate the efficiency value
+            const efficiencyElement = document.getElementById('efficiencyValue');
+            const efficiencyFill = document.getElementById('efficiencyFill');
+            
+            animateValue(efficiencyElement, 0, results.efficiency, 1500, (value) => `${value.toFixed(1)}%`);
+            
+            setTimeout(() => {
+                efficiencyFill.style.width = `${results.efficiency}%`;
+            }, 500);
+            
+            // Animate other values
+            animateValue(document.getElementById('wasteValue'), 0, results.totalWaste, 1200, (value) => value.toFixed(2));
+            animateValue(document.getElementById('boardsUsedValue'), 0, results.boardsUsed, 1000, (value) => Math.round(value));
+            animateValue(document.getElementById('cutsNeededValue'), 0, results.totalCuts, 1100, (value) => Math.round(value));
+            animateValue(document.getElementById('rotatedPiecesValue'), 0, results.rotatedPieces, 1300, (value) => Math.round(value));
+            
+            document.getElementById('processingTimeValue').textContent = `${results.processingTime.toFixed(1)}ms`;
+        }
+
+        function animateValue(element, start, end, duration, formatter) {
+            const startTime = performance.now();
+            
+            function update() {
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeOutCubic(progress);
+                const current = start + (end - start) * eased;
+                
+                element.textContent = formatter(current);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        // Enhanced visualization
+        function visualizeCutsEnhanced(results) {
+            const container = document.getElementById('cutVisualization');
+            container.innerHTML = '';
+            
+            if (results.cuts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">No cuts calculated</p>';
+                return;
+            }
+            
+            results.cuts.forEach((cut, index) => {
+                const boardDiv = createBoardVisualization(cut, index);
+                container.appendChild(boardDiv);
+            });
+        }
+
+        async function visualizeCutsAnimated(results) {
+            const container = document.getElementById('cutVisualization');
+            container.innerHTML = '';
+            
+            if (results.cuts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">No cuts calculated</p>';
+                return;
+            }
+            
+            // Create all boards first
+            const boardElements = [];
+            results.cuts.forEach((cut, index) => {
+                const boardDiv = createBoardVisualization(cut, index, false); // Don't show pieces initially
+                container.appendChild(boardDiv);
+                boardElements.push(boardDiv);
+            });
+            
+            // Animate piece placement
+            for (let i = 0; i < results.cuts.length; i++) {
+                const cut = results.cuts[i];
+                const boardDiv = boardElements[i];
+                
+                for (let j = 0; j < cut.placedPieces.length; j++) {
+                    const piece = cut.placedPieces[j];
+                    const pieceDiv = createPieceElement(piece, j);
+                    boardDiv.appendChild(pieceDiv);
+                    
+                    // Animate piece placement
+                    setTimeout(() => {
+                        pieceDiv.classList.add('piece-placement-animation');
+                        setTimeout(() => {
+                            pieceDiv.classList.add('placed');
+                            pieceDiv.classList.remove('piece-placement-animation');
+                        }, 800);
+                    }, (i * 500) + (j * 200));
+                }
+            }
+        }
+
+        function createBoardVisualization(cut, index, showPieces = true) {
+            const scale = Math.min(300 / cut.stock.length, 200 / cut.stock.width) * currentZoom;
+            const boardWidth = cut.stock.length * scale;
+            const boardHeight = cut.stock.width * scale;
+            
+            const boardDiv = document.createElement('div');
+            boardDiv.className = 'board-visual';
+            boardDiv.style.width = `${boardWidth}px`;
+            boardDiv.style.height = `${boardHeight}px`;
+            boardDiv.style.position = 'relative';
+            
+            // Add board label
+            const label = document.createElement('div');
+            label.className = 'board-label';
+            label.textContent = `Board ${index + 1} (${cut.stock.length}" × ${cut.stock.width}" × ${cut.stock.thickness}")`;
+            boardDiv.appendChild(label);
+            
+            if (showPieces) {
+                // Add cut pieces
+                cut.placedPieces.forEach((piece, pieceIndex) => {
+                    const pieceDiv = createPieceElement(piece, pieceIndex, scale);
+                    pieceDiv.classList.add('placed');
+                    boardDiv.appendChild(pieceDiv);
+                });
+            }
+            
+            // Add kerf lines if enabled
+            if (document.getElementById('showKerfLines').checked) {
+                addKerfLines(boardDiv, cut, scale);
+            }
+            
+            return boardDiv;
+        }
+
+        function createPieceElement(piece, pieceIndex, scale = null) {
+            if (!scale) {
+                scale = Math.min(300 / 96, 200 / 48) * currentZoom; // Default scale
+            }
+            
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD'];
+            
+            const pieceDiv = document.createElement('div');
+            pieceDiv.className = 'cut-piece';
+            if (piece.rotated) {
+                pieceDiv.classList.add('rotated');
+            }
+            
+            pieceDiv.style.left = `${piece.x * scale}px`;
+            pieceDiv.style.top = `${piece.y * scale}px`;
+            pieceDiv.style.width = `${piece.length * scale}px`;
+            pieceDiv.style.height = `${piece.width * scale}px`;
+            pieceDiv.style.borderColor = colors[pieceIndex % colors.length];
+            pieceDiv.style.backgroundColor = colors[pieceIndex % colors.length] + '40';
+            
+            // Add piece label
+            const label = document.createElement('div');
+            label.style.fontSize = `${Math.max(0.6, 0.8 * scale)}rem`;
+            label.style.fontWeight = 'bold';
+            label.style.textAlign = 'center';
+            label.style.color = '#333';
+            label.textContent = piece.name || `Piece ${pieceIndex + 1}`;
+            pieceDiv.appendChild(label);
+            
+            // Add dimensions as tooltip
+            pieceDiv.title = `${piece.name}\nDimensions: ${piece.length}" × ${piece.width}" × ${piece.thickness}"\n${piece.rotated ? 'Rotated 90°' : 'Original orientation'}`;
+            
+            return pieceDiv;
+        }
+
+        function addKerfLines(boardDiv, cut, scale) {
+            const kerfWidth = parseFloat(document.getElementById('kerfWidth').value) || 0;
+            if (kerfWidth <= 0) return;
+            
+            cut.placedPieces.forEach((piece, index) => {
+                // Vertical kerf line (right edge)
+                if (piece.x + piece.length < cut.stock.length) {
+                    const vLine = document.createElement('div');
+                    vLine.className = 'kerf-line vertical';
+                    vLine.style.left = `${(piece.x + piece.length) * scale}px`;
+                    vLine.style.top = `${piece.y * scale}px`;
+                    vLine.style.height = `${piece.width * scale}px`;
+                    boardDiv.appendChild(vLine);
+                }
+                
+                // Horizontal kerf line (bottom edge)
+                if (piece.y + piece.width < cut.stock.width) {
+                    const hLine = document.createElement('div');
+                    hLine.className = 'kerf-line horizontal';
+                    hLine.style.left = `${piece.x * scale}px`;
+                    hLine.style.top = `${(piece.y + piece.width) * scale}px`;
+                    hLine.style.width = `${piece.length * scale}px`;
+                    boardDiv.appendChild(hLine);
+                }
+            });
+        }
+
+        // Zoom and pan functionality
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom * 1.2, 3);
+            updateZoomDisplay();
+            if (calculationResults) {
+                visualizeCutsEnhanced(calculationResults);
+            }
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom / 1.2, 0.3);
+            updateZoomDisplay();
+            if (calculationResults) {
+                visualizeCutsEnhanced(calculationResults);
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoomDisplay();
+            if (calculationResults) {
+                visualizeCutsEnhanced(calculationResults);
+            }
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = `${Math.round(currentZoom * 100)}%`;
+        }
+
+        function toggleKerfLines() {
+            if (calculationResults) {
+                visualizeCutsEnhanced(calculationResults);
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('boardCanvasContainer');
+            
+            if (!isFullscreen) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                isFullscreen = true;
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                isFullscreen = false;
+            }
+        }
+
+        // Export functionality
+        async function exportToPDF() {
+            if (!calculationResults) {
+                showMessage("⚠️ Please calculate cuts first", "warning");
+                return;
+            }
+            
+            try {
+                showMessage("📄 Generating PDF report...", "info");
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+                
+                // Title
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                doc.text('WoodCut Pro - Cutting Plan', 20, 20);
+                
+                // Project info
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+                doc.text(`Units: ${currentUnits}`, 20, 35);
+                doc.text(`Algorithm: ${calculationResults.algorithm}`, 20, 40);
+                
+                // Efficiency stats
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('Optimization Results:', 20, 55);
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Material Efficiency: ${calculationResults.efficiency.toFixed(1)}%`, 30, 65);
+                doc.text(`Boards Used: ${calculationResults.boardsUsed}`, 30, 70);
+                doc.text(`Total Cuts: ${calculationResults.totalCuts}`, 30, 75);
+                doc.text(`Rotated Pieces: ${calculationResults.rotatedPieces}`, 30, 80);
+                doc.text(`Waste Volume: ${calculationResults.totalWaste.toFixed(2)} ${currentUnits === 'inches' ? 'in³' : 'cm³'}`, 30, 85);
+                doc.text(`Processing Time: ${calculationResults.processingTime.toFixed(1)}ms`, 30, 90);
+                
+                // Cut list
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('Cutting List:', 20, 105);
+                
+                let yPos = 115;
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                
+                calculationResults.cuts.forEach((cut, boardIndex) => {
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Board ${boardIndex + 1} (${cut.stock.length} × ${cut.stock.width} × ${cut.stock.thickness}):`, 30, yPos);
+                    yPos += 5;
+                    
+                    doc.setFont(undefined, 'normal');
+                    cut.placedPieces.forEach((piece, pieceIndex) => {
+                        const rotatedText = piece.rotated ? ' (Rotated)' : '';
+                        doc.text(`  ${piece.name}: ${piece.length} × ${piece.width} × ${piece.thickness}${rotatedText}`, 35, yPos);
+                        yPos += 4;
+                        
+                        if (yPos > 180) { // New page
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                    });
+                    yPos += 3;
+                });
+                
+                // Save the PDF
+                doc.save(`woodcut-plan-${new Date().toISOString().split('T')[0]}.pdf`);
+                showMessage("📄 PDF exported successfully!", "success");
+                
+            } catch (error) {
+                console.error('PDF export error:', error);
+                showMessage("❌ Failed to export PDF", "error");
+            }
+        }
+
+        async function exportToImage() {
+            if (!calculationResults) {
+                showMessage("⚠️ Please calculate cuts first", "warning");
+                return;
+            }
+            
+            try {
+                showMessage("🖼️ Generating image...", "info");
+                
+                const visualizationElement = document.getElementById('cutVisualization');
+                const canvas = await html2canvas(visualizationElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false
+                });
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `woodcut-layout-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                showMessage("🖼️ Image exported successfully!", "success");
+                
+            } catch (error) {
+                console.error('Image export error:', error);
+                showMessage("❌ Failed to export image", "error");
+            }
+        }
+
+        async function exportCutList() {
+            if (!calculationResults) {
+                showMessage("⚠️ Please calculate cuts first", "warning");
+                return;
+            }
+            
+            try {
+                let cutList = 'WoodCut Pro - Cutting List\n';
+                cutList += `Generated: ${new Date().toLocaleDateString()}\n`;
+                cutList += `Units: ${currentUnits}\n`;
+                cutList += `Efficiency: ${calculationResults.efficiency.toFixed(1)}%\n\n`;
+                
+                calculationResults.cuts.forEach((cut, boardIndex) => {
+                    cutList += `Board ${boardIndex + 1} (${cut.stock.length} × ${cut.stock.width} × ${cut.stock.thickness}):\n`;
+                    
+                    cut.placedPieces.forEach(piece => {
+                        const rotatedText = piece.rotated ? ' (Rotated)' : '';
+                        cutList += `  - ${piece.name}: ${piece.length} × ${piece.width} × ${piece.thickness}${rotatedText}\n`;
+                    });
+                    cutList += '\n';
+                });
+                
+                const blob = new Blob([cutList], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `woodcut-cutlist-${new Date().toISOString().split('T')[0]}.txt`;
+                link.click();
+                
+                URL.revokeObjectURL(link.href);
+                showMessage("📋 Cut list exported successfully!", "success");
+                
+            } catch (error) {
+                console.error('Cut list export error:', error);
+                showMessage("❌ Failed to export cut list", "error");
+            }
+        }
+
+        function saveProject() {
+            try {
+                const projectData = {
+                    name: `WoodCut Project ${new Date().toLocaleDateString()}`,
+                    units: currentUnits,
+                    stock: collectStockData(),
+                    required: collectRequiredData(),
+                    settings: {
+                        kerfWidth: document.getElementById('kerfWidth').value,
+                        allowRotation: document.getElementById('allowRotation').checked,
+                        packingAlgorithm: document.getElementById('packingAlgorithm').value,
+                        animateCalculation: document.getElementById('animateCalculation').checked
+                    },
+                    results: calculationResults,
+                    timestamp: new Date().toISOString(),
+                    version: '2.0'
+                };
+                
+                const dataStr = JSON.stringify(projectData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `woodcut-project-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                showMessage("💾 Project saved successfully!", "success");
+                
+            } catch (error) {
+                console.error('Save project error:', error);
+                showMessage("❌ Failed to save project", "error");
+            }
+        }
+
+        function loadProject() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const projectData = JSON.parse(e.target.result);
+                            loadProjectData(projectData);
+                            showMessage("📁 Project loaded successfully!", "success");
+                        } catch (error) {
+                            console.error('Load project error:', error);
+                            showMessage("❌ Error loading project file", "error");
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function loadProjectData(data, isAutosave = false) {
+            try {
+                // Set units
+                setUnits(data.units || 'inches');
+                
+                // Load settings
+                if (data.settings) {
+                    document.getElementById('kerfWidth').value = data.settings.kerfWidth || 0.125;
+                    document.getElementById('allowRotation').checked = data.settings.allowRotation !== false;
+                    document.getElementById('packingAlgorithm').value = data.settings.packingAlgorithm || 'maxrects';
+                    document.getElementById('animateCalculation').checked = data.settings.animateCalculation !== false;
+                }
+                
+                // Clear and load stock pieces
+                document.getElementById('stockPieces').innerHTML = '';
+                if (data.stock && data.stock.length > 0) {
+                    data.stock.forEach(stock => {
+                        addStockPiece();
+                        const container = document.getElementById('stockPieces').lastElementChild;
+                        const inputs = container.querySelectorAll('input[type="number"]');
+                        inputs[0].value = stock.length;
+                        inputs[1].value = stock.width;
+                        inputs[2].value = stock.thickness;
+                    });
+                } else {
+                    addStockPiece();
+                }
+                
+                // Clear and load required pieces
+                document.getElementById('requiredPieces').innerHTML = '';
+                if (data.required && data.required.length > 0) {
+                    // Group by original index to reconstruct quantities
+                    const groupedPieces = {};
+                    data.required.forEach(piece => {
+                        const key = `${piece.length}-${piece.width}-${piece.thickness}`;
+                        if (!groupedPieces[key]) {
+                            groupedPieces[key] = { ...piece, quantity: 0 };
+                        }
+                        groupedPieces[key].quantity++;
+                    });
+                    
+                    Object.values(groupedPieces).forEach(piece => {
+                        addRequiredPiece();
+                        const container = document.getElementById('requiredPieces').lastElementChild;
+                        const inputs = container.querySelectorAll('input[type="number"]');
+                        inputs[0].value = piece.length;
+                        inputs[1].value = piece.width;
+                        inputs[2].value = piece.thickness;
+                        inputs[3].value = piece.quantity;
+                    });
+                } else {
+                    addRequiredPiece();
+                }
+                
+                // Load results if available
+                if (data.results && !isAutosave) {
+                    calculationResults = data.results;
+                    displayResultsEnhanced(data.results);
+                    visualizeCutsEnhanced(data.results);
+                    document.getElementById('results').classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error('Error loading project data:', error);
+                showMessage("⚠️ Some project data could not be loaded", "warning");
+            }
+        }
+
+        async function shareProject() {
+            if (!calculationResults) {
+                showMessage("⚠️ Please calculate cuts first", "warning");
+                return;
+            }
+            
+            try {
+                const projectData = {
+                    name: `WoodCut Project ${new Date().toLocaleDateString()}`,
+                    units: currentUnits,
+                    stock: collectStockData(),
+                    required: collectRequiredData(),
+                    settings: {
+                        kerfWidth: document.getElementById('kerfWidth').value,
+                        allowRotation: document.getElementById('allowRotation').checked,
+                        packingAlgorithm: document.getElementById('packingAlgorithm').value
+                    },
+                    results: calculationResults,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const shareData = {
+                    title: 'WoodCut Pro - Cutting Plan',
+                    text: `Check out my optimized cutting plan with ${calculationResults.efficiency.toFixed(1)}% efficiency!`,
+                    url: window.location.href
+                };
+                
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                    showMessage("🔗 Project shared successfully!", "success");
+                } else {
+                    // Fallback: copy to clipboard
+                    const shareText = `${shareData.title}\n${shareData.text}\n\nProject Data:\n${JSON.stringify(projectData, null, 2)}`;
+                    await navigator.clipboard.writeText(shareText);
+                    showMessage("📋 Project data copied to clipboard!", "success");
+                }
+                
+            } catch (error) {
+                console.error('Share project error:', error);
+                showMessage("❌ Failed to share project", "error");
+            }
+        }
+
+        // Utility functions
+        function scrollToCalculator() {
+            document.getElementById('calculator').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        function showMessage(message, type) {
+            // Remove existing messages
+            const existingMessages = document.querySelectorAll('.message');
+            existingMessages.forEach(msg => {
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 300);
+            });
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.opacity = '0';
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            // Animate in
+            setTimeout(() => {
+                messageDiv.style.opacity = '1';
+            }, 10);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveProject();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        loadProject();
+                        break;
+                    case 'Enter':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            calculateCuts();
+                        }
+                        break;
+                }
+            }
+            
+            if (e.key === 'F1') {
+                e.preventDefault();
+                showTutorial();
+            }
+        });
+
+        // Add fullscreen change listener
+        document.addEventListener('fullscreenchange', function() {
+            isFullscreen = !!document.fullscreenElement;
+        });
+
+        document.addEventListener('webkitfullscreenchange', function() {
+            isFullscreen = !!document.webkitFullscreenElement;
+        });
+
+        // Initialize tooltips
+        function initializeTooltips() {
+            const tooltips = document.querySelectorAll('[title]');
+            tooltips.forEach(element => {
+                element.addEventListener('mouseenter', showTooltip);
+                element.addEventListener('mouseleave', hideTooltip);
+            });
+        }
+
+        function showTooltip(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-popup';
+            tooltip.textContent = e.target.title;
+            tooltip.style.cssText = `
+                position: absolute;
+                background: #333;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                z-index: 10000;
+                pointer-events: none;
+                white-space: nowrap;
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = rect.left + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+            
+            e.target.title = ''; // Temporarily remove title to prevent browser tooltip
+            e.target._originalTitle = e.target.title;
+        }
+
+        function hideTooltip(e) {
+            const tooltip = document.querySelector('.tooltip-popup');
+            if (tooltip) {
+                tooltip.remove();
+            }
+            if (e.target._originalTitle !== undefined) {
+                e.target.title = e.target._originalTitle;
+            }
+        }
+
+        // Performance monitoring
+        function monitorPerformance() {
+            if ('performance' in window) {
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const perfData = performance.getEntriesByType('navigation')[0];
+                        console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+                    }, 0);
+                });
+            }
+        }
+
+        monitorPerformance();
+    </script>
+</body>
+</html>
+
+
